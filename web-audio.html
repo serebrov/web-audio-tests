@@ -1,0 +1,33 @@
+<html><head>
+<script src="../../musical.js"></script> <!-- defines Instrument class -->
+</head>
+
+<body style="font-family:Arial;padding:36px 20%;">
+<h2>The Moonlight Sonata. <span></span></h2>
+
+<p>Web Audio Test</p>
+
+<script>
+
+var audioContext = window.AudioContext || window.webkitAudioContext;
+
+// Low frequency oscillator to create a periodic change in
+// sound's gain, tremolo effect
+var LFO = audioContext.createOscillator();
+var VCA = audioContext.createGain();
+var oscillator = audioContext.createOscillator();
+
+//connections
+LFO.connect(VCA.gain);
+oscillator.connect(VCA);
+VCA.connect(audioContext.destination);
+
+// LFO -> VCA.gain
+// osc -> VCA      -> dest
+
+LFO.frequency.value = 4;
+
+LFO.start(0);
+oscillator.start(0);
+
+</script>
