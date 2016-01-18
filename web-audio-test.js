@@ -1,32 +1,14 @@
-function tremoloTest() {
-  var audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-  // Low frequency oscillator to create a periodic change in
-  // sound's gain, tremolo effect
-  var LFO = audioContext.createOscillator();
-  var VCA = audioContext.createGain();
-  var oscillator = audioContext.createOscillator();
-
-  //connections
-  LFO.connect(VCA.gain);
-  oscillator.connect(VCA);
-  VCA.connect(audioContext.destination);
-
-  // LFO -> VCA.gain
-  // osc -> VCA      -> dest
-
-  LFO.frequency.value = 4;
-
-  LFO.start(0);
-  oscillator.start(0);
-}
-
-function periodicWaveTest(name) {
+function periodicWaveTest(name, notes) {
+  // Original source is from musicial.js (https://github.com/PencilCode/musical.js)
+  //
+  // Call this function to play notes with selected instrument:
+  //   periodicWaveTest('piano', notes);
+  //
   name = name || 'piano';
+  notes = notes || getMoonlightNotesShort();
   var ac = new AudioContext();
 
   var waves = createWaves(ac);
-
   var wave = waves[name];
 
   var dcn = ac.createDynamicsCompressor();
@@ -36,10 +18,20 @@ function periodicWaveTest(name) {
   var out = ac.createGain();
   out.connect(dcn);
 
-  var notes = getTrainingNotes();
-  var notes = getMoonlightNotesShort();
-  //var notes = getMoonlightNotes();
 
+  // The setup includes tail part, which is common for all nodes
+  // And head - set of nodes added for each note
+  // It looks like this:
+  //
+  // ------------- HEAD ---------------- | --------- TAIL --------------------
+  //                                     |
+  // [ [Oscillator]->|Biquad|->|Gain|-> ][ |Gain|->|Dynamics  |->|Destination| ]
+  //   [Periodic  ]  |Filter|  |ADSR|             |Compressor|
+  //   [Wave      ]
+  //
+  // The first oscillator can be doubled by another one to play
+  // at note frequency + timbre detune (if detune is set for the timbre)
+  //
   for (var idx in notes) {
     var note = notes[idx];
     var timbre = wave.defs;
@@ -56,27 +48,32 @@ function periodicWaveTest(name) {
     var g = ac.createGain();
     g.connect(out);
     g.gain.setValueAtTime(0, startTime);
+    // ATTACK
     g.gain.linearRampToValueAtTime(amp, attackTime);
-    // For the beginning of the decay, use linearRampToValue instead
-    // of setTargetAtTime, because it avoids http://crbug.com/254942.
-    // while (decayStartTime < attackTime + 1/32 &&
-    //        decayStartTime + 1/256 < releaseTime) {
-    //   // Just trace out the curve in increments of 1/256 sec
-    //   // for up to 1/32 seconds.
-    //   decayStartTime += 1/256;
-    //   g.gain.linearRampToValueAtTime(
-    //       amp * (timbre.sustain + (1 - timbre.sustain) *
-    //           Math.exp((attackTime - decayStartTime) / decayTime)),
-    //       decayStartTime);
-    // }
-    // For the rest of the decay, use setTargetAtTime.
+    // DECAY
+    //   For the beginning of the decay, use linearRampToValue instead
+    //   of setTargetAtTime, because it avoids http://crbug.com/254942.
+    while (decayStartTime < attackTime + 1/32 &&
+           decayStartTime + 1/256 < releaseTime) {
+      // Just trace out the curve in increments of 1/256 sec
+      // for up to 1/32 seconds.
+      decayStartTime += 1/256;
+      g.gain.linearRampToValueAtTime(
+          amp * (timbre.sustain + (1 - timbre.sustain) *
+              Math.exp((attackTime - decayStartTime) / decayTime)),
+          decayStartTime);
+    }
+    // SUSTAIN
+    //   For the rest of the decay, use setTargetAtTime.
     g.gain.setTargetAtTime(amp * timbre.sustain,
         decayStartTime, decayTime);
-    // Then at release time, mark the value and ramp to zero.
+    // RELEASE
+    //   Then at release time, mark the value and ramp to zero.
     g.gain.setValueAtTime(amp * (timbre.sustain + (1 - timbre.sustain) *
         Math.exp((attackTime - releaseTime) / decayTime)), releaseTime);
     g.gain.linearRampToValueAtTime(0, stopTime);
 
+    //var f = g;
     var f = ac.createBiquadFilter();
     f.frequency.value =
         wave.defs.cutoff + note.frequency * wave.defs.cutfollow;
@@ -84,9 +81,12 @@ function periodicWaveTest(name) {
     f.connect(g);
 
     var osc = ac.createOscillator();
-    //alert(note);
+    // Configure periodic wave
     osc.frequency.value = note.frequency;
     var pwave = wave.wave;
+    // Check the note frequency and if it is greater than wave frequency
+    // then switch to another wave for higher frequency
+    // Waves for different frequences are pre-created in createWaves()
     if (wave.freq) {
       var bwf = 0;
       // Look for a higher-frequency variant.
@@ -102,6 +102,7 @@ function periodicWaveTest(name) {
     osc.connect(f);
     osc.start(startTime);
     osc.stop(stopTime);
+
     if (doubled) {
       var o2 = ac.createOscillator();
       o2.frequency.value = note.frequency * timbre.detune;
@@ -112,11 +113,6 @@ function periodicWaveTest(name) {
     }
     startTime += note.duration*1;
   }
-
-  // osc.connect(ac.destination);
-
-  // osc.start();
-  // osc.stop(20);
 }
 
 function createWaves(ac) {
@@ -265,6 +261,30 @@ function createWaves(ac) {
     }
   });
 }
+
+function tremoloTest() {
+  var audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+  // Low frequency oscillator to create a periodic change in
+  // sound's gain, tremolo effect
+  var LFO = audioContext.createOscillator();
+  var VCA = audioContext.createGain();
+  var oscillator = audioContext.createOscillator();
+
+  //connections
+  LFO.connect(VCA.gain);
+  oscillator.connect(VCA);
+  VCA.connect(audioContext.destination);
+
+  // LFO -> VCA.gain
+  // osc -> VCA      -> dest
+
+  LFO.frequency.value = 4;
+
+  LFO.start(0);
+  oscillator.start(0);
+}
+
 
 function getMoonlightNotesShort() {
   return [{"frequency":207.65234878997256,"duration":0.3020833333333333,"velocity":0.4,"time":1.811156462585034,"cleanuptime":2.2757397959183674},{"frequency":277.1826309768721,"duration":0.3020833333333333,"velocity":0.4,"time":2.1444897959183673,"cleanuptime":2.609073129251701},{"frequency":329.6275569128699,"duration":0.3020833333333333,"velocity":0.4,"time":2.477823129251701,"cleanuptime":2.9424064625850344},{"frequency":207.65234878997256,"duration":0.3020833333333333,"velocity":0.4,"time":2.811156462585034,"cleanuptime":3.2757397959183674},{"frequency":277.1826309768721,"duration":0.3020833333333333,"velocity":0.4,"time":3.1444897959183673,"cleanuptime":3.609073129251701},{"frequency":329.6275569128699,"duration":0.3020833333333333,"velocity":0.4,"time":3.477823129251701,"cleanuptime":3.9424064625850344},{"frequency":207.65234878997256,"duration":0.3020833333333333,"velocity":0.4,"time":3.811156462585034,"cleanuptime":4.2757397959183665},{"frequency":277.1826309768721,"duration":0.3020833333333333,"velocity":0.4,"time":4.144489795918367,"cleanuptime":4.6090731292516995},{"frequency":329.6275569128699,"duration":0.3020833333333333,"velocity":0.4,"time":4.477823129251701,"cleanuptime":4.9424064625850335},{"frequency":207.65234878997256,"duration":0.3020833333333333,"velocity":0.4,"time":4.811156462585034,"cleanuptime":5.2757397959183665},{"frequency":277.1826309768721,"duration":0.3020833333333333,"velocity":0.4,"time":5.144489795918368,"cleanuptime":5.6090731292517},{"frequency":329.6275569128699,"duration":0.3020833333333333,"velocity":0.4,"time":5.477823129251701,"cleanuptime":5.9424064625850335},{"frequency":207.65234878997256,"duration":0.3020833333333333,"velocity":0.4,"time":5.811156462585034,"cleanuptime":6.2757397959183665},{"frequency":277.1826309768721,"duration":0.3020833333333333,"velocity":0.4,"time":6.144489795918367,"cleanuptime":6.6090731292516995},{"frequency":329.6275569128699,"duration":0.3020833333333333,"velocity":0.4,"time":6.4778231292517,"cleanuptime":6.942406462585033},{"frequency":207.65234878997256,"duration":0.3020833333333333,"velocity":0.4,"time":6.811156462585033,"cleanuptime":7.275739795918366},{"frequency":277.1826309768721,"duration":0.3020833333333333,"velocity":0.4,"time":7.144489795918366,"cleanuptime":7.609073129251699},{"frequency":329.6275569128699,"duration":0.3020833333333333,"velocity":0.4,"time":7.477823129251699,"cleanuptime":7.942406462585032},{"frequency":207.65234878997256,"duration":0.3020833333333333,"velocity":0.4,"time":7.811156462585032,"cleanuptime":8.275739795918366},{"frequency":277.1826309768721,"duration":0.3020833333333333,"velocity":0.4,"time":8.144489795918366,"cleanuptime":8.6090731292517},{"frequency":329.6275569128699,"duration":0.3020833333333333,"velocity":0.4,"time":8.477823129251698,"cleanuptime":8.942406462585032},{"frequency":207.65234878997256,"duration":0.3020833333333333,"velocity":0.4,"time":8.811156462585032,"cleanuptime":9.275739795918366},{"frequency":277.1826309768721,"duration":0.3020833333333333,"velocity":0.4,"time":9.144489795918364,"cleanuptime":9.609073129251698},{"frequency":329.6275569128699,"duration":0.3020833333333333,"velocity":0.4,"time":9.477823129251698,"cleanuptime":9.942406462585032},{"frequency":220,"duration":0.3020833333333333,"velocity":0.4,"time":9.81115646258503,"cleanuptime":10.275739795918364},{"frequency":277.1826309768721,"duration":0.3020833333333333,"velocity":0.4,"time":10.144489795918364,"cleanuptime":10.609073129251698},{"frequency":329.6275569128699,"duration":0.3020833333333333,"velocity":0.4,"time":10.477823129251698,"cleanuptime":10.942406462585032},{"frequency":220,"duration":0.3020833333333333,"velocity":0.4,"time":10.811156462585032,"cleanuptime":11.275739795918366},{"frequency":277.1826309768721,"duration":0.3020833333333333,"velocity":0.4,"time":11.144489795918366,"cleanuptime":11.6090731292517},{"frequency":329.6275569128699,"duration":0.3020833333333333,"velocity":0.4,"time":11.4778231292517,"cleanuptime":11.942406462585033},{"frequency":220,"duration":0.3020833333333333,"velocity":0.4,"time":11.811156462585034,"cleanuptime":12.275739795918367}];

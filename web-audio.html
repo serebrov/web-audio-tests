@@ -7,11 +7,16 @@
 
 <script>
   //tremoloTest();
+
+  //var notes = getTrainingNotes();
+  var notes = getMoonlightNotesShort();
+  //var notes = getMoonlightNotes();
+
   periodicWaveTest();
   setTimeout(function() {
-    periodicWaveTest('bass');
+    periodicWaveTest('bass', notes);
   }, 11000);
   setTimeout(function() {
-    periodicWaveTest('guitar');
+    periodicWaveTest('guitar', notes);
   }, 22000);
 </script>
