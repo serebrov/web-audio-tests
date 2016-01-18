@@ -18,8 +18,9 @@ For a song that uses more ABC notation features, see
 <script>
 
 // Select a timbre that sounds like a piano.
-//var inst = new Instrument({wave: 'piano', detune: 0});
-var inst = new Instrument({wave: 'bass', detune: 0});
+var inst = new Instrument({wave: 'piano', detune: 0});
+//var inst = new Instrument({wave: 'bass', detune: 0});
+//var inst = new Instrument({wave: 'guitar', detune: 0});
 //var inst = new Instrument({wave: 'noice', detune: 0});
 //var inst = new Instrument();
 
@@ -77,6 +78,22 @@ var song =
   "[V:0]z6 B2|\n" + // Please continue me....
   "[V:1](3B,=DF)(3B,DF)(3=B,^DF)(3B,DF)|\n" +
   "[V:2][B,,,B,,]8|\n" +
+  "";
+
+var song =
+  "X: 1\n" +
+  "T:Beethoven's Moonlight Sonata, transcribed into ABC by David Bau.\n" +
+  "M:4/4\n" +
+  "L:1/8\n" +
+  "R:\n" +
+  "K:C#m\n" +
+  "[V:0]z8|\n" +
+  "[V:1]!pp!(3G,CE)(3G,CE)(3G,CE)(3G,CE)|\n" +
+  "[V:2][C,,C,]8|\n" +
+  "[V:0]z8|\n" +
+  "[V:1](3G,CE)(3G,CE)(3G,CE)(3G,CE)|\n" +
+  "[V:2][B,,,B,,]8|\n" +
+  "[V:0]z8|\n" +
   "";
 
 // Play a song from a string in ABC notation.

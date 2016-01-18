@@ -47,6 +47,8 @@ var makeOscillator = utils.makeOscillator;
 var midiToPitch = utils.midiToPitch;
 var parseABCFile = require('./parser-abc');
 
+window.songDecoded = [];
+
 function Instrument(options) {
   this._atop = getAudioTop();    // Audio context.
   this._timbre = makeTimbre(options, this._atop); // The instrument's timbre.
@@ -596,6 +598,7 @@ Instrument.prototype.tone = function(pitch, duration, velocity, delay, timbre, o
         cleanuptime: Infinity,
         origin: origin             // save the origin of the tone for visible feedback
       };
+  songDecoded.push(record);
 
   if (time < now + Instrument.bufferSecs) {
     // The tone starts soon!  Give it directly to WebAudio.
@@ -1718,12 +1721,12 @@ module.exports = function(ac) {
     },
     bass: {
        real: [
-          0.000000, -0.000001, -0.0, 0.0, -0.0, 0.0,
-          -0.000000, 0.000000, -0.000000, 0.000000, -0.000000, 0.000000,
-          -0.000000, 0.000000, -0.000000, 0.000000, -0.000000, 0.000000,
-          -0.000000, 0.000000, -0.000000, 0.000000, -0.000000, 0.000000,
-          -0.000000, 0.000000, -0.000000, 0.000000, -0.000000, 0.000000,
-          -0.0000, 0.000109],
+         0.000000, -0.000001, -0.085652, 0.034718, -0.036957, 0.014576,
+-0.005792, 0.003677, -0.002998, 0.001556, -0.000486, 0.001500,
+-0.000809, 0.000955, -0.000169, 0.000636, -0.000682, 0.000663,
+-0.000166, 0.000509, -0.000420, 0.000194, -0.000025, 0.000267,
+-0.000299, 0.000226, -0.000038, 0.000163, -0.000273, 0.000141,
+-0.000047, 0.000109],
        imag: [
         0.000000, 0.500000, -0.000001, 0.000000, -0.000001, 0.000001,
         -0.000000, 0.000000, -0.000000, 0.000000, -0.000000, 0.000000,
@@ -1732,9 +1735,10 @@ module.exports = function(ac) {
         -0.000000, 0.000000, -0.000000, 0.000000, -0.000000, 0.000000,
         -0.000000, 0.000000],
       // How to adjust the harmonics for the higest notes.
+      //mult: [1,1,1,1,1,1,1,1,1,1,1,1,1,1],
       mult: [1, 1, 0.18, 0.016, 0.01, 0.01, 0.01, 0.004,
                 0.014, 0.02, 0.014, 0.004, 0.002, 0.00001],
-      // The frequencies at which to interpolate the harmonics.
+      // // The frequencies at which to interpolate the harmonics.
       freq: [65, 80, 100, 135, 180, 240, 620, 1360],
       // The default filter settings to use for the piano wave.
       // TODO: this approach attenuates low notes too much -
