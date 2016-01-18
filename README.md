@@ -1,8 +1,7 @@
-[musicial.js](https://github.com/PencilCode/musical.js) and web audio API tests.
+Web audio API and [musicial.js](https://github.com/PencilCode/musical.js) experiments.
 
-[index.html](./index.html) - original musicial.js example
-
-The [web-audio.html](./web-audio.html) and [web-audio-test.js](./web-audio-test.js) - reduced example of code extracted from musicial.js.
+The original musicla.js sample is in the [index.html](./index.html).
+The [web-audio.html](./web-audio.html) and [web-audio-test.js](./web-audio-test.js) - here there is a reduced example of code extracted from musicial.js.
 
 The audio nodes setup for musicial.js is this:
 
