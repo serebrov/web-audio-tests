@@ -1,8 +1,16 @@
 function periodicWaveTest(name, notes) {
-  // Original source is from musicial.js (https://github.com/PencilCode/musical.js)
+  // Original source is from musicial.js
+  // https://github.com/PencilCode/musical.js
   //
   // Call this function to play notes with selected instrument:
   //   periodicWaveTest('piano', notes);
+  //
+  // Where `notes` is an array of objects like this:
+  // {"frequency":415.3,"duration":0.71875,"velocity":1,"time":20.811,"cleanuptime":21.692}
+  // Test arrays of notes can be got from few functions at the end of
+  // file (like getMoonlightNotesShort()), these were stolen also from
+  // musicial.js (just recorded into the array when musicial parsed them
+  // from the abc notation)
   //
   name = name || 'piano';
   notes = notes || getMoonlightNotesShort();
@@ -25,12 +33,16 @@ function periodicWaveTest(name, notes) {
   //
   // ------------- HEAD ---------------- | --------- TAIL --------------------
   //                                     |
-  // [ [Oscillator]->|Biquad|->|Gain|-> ][ |Gain|->|Dynamics  |->|Destination| ]
-  //   [Periodic  ]  |Filter|  |ADSR|             |Compressor|
-  //   [Wave      ]
+  // [ |Oscillator|->|Biquad|->|Gain|-> ][ |Gain|->|Dynamics  |->|Destination| ]
+  //   |Periodic  |  |Filter|  |ADSR|              |Compressor|
+  //   |Wave      |
   //
   // The first oscillator can be doubled by another one to play
   // at note frequency + timbre detune (if detune is set for the timbre)
+  //
+  // So we crate an oscillator (or two) + filter + ADSR gain to play each note.
+  // This way we create a lot of audio nodes.
+  // Musicial.js handles this by creating a queue of notes and passed only a limited set of notes to web audio API.
   //
   for (var idx in notes) {
     var note = notes[idx];
@@ -258,7 +270,37 @@ function createWaves(ac) {
               attack: 0.002, decay: 0.25, sustain: 0.03, release: 0.1,
               decayfollow: 0.7,
               cutoff: 800, cutfollow: 0.1, resonance: 1, detune: 0.9994 }
-    }
+    },
+    trombone: {
+       real: [
+0.000000, 0.171738, 0.131907, -0.194800, -0.129913, -0.081043,
+0.049213, 0.027828, -0.008357, -0.005044, 0.002145, 0.000773,
+-0.001392, -0.000916, -0.000012, 0.000323, -0.000003, 0.000127,
+-0.000135, -0.000029, -0.000031, 0.000087, -0.000091, 0.000005,
+-0.000026, 0.000027, -0.000062, -0.000017, -0.000002, 0.000002,
+0.000012, -0.000024
+       ],
+       imag: [
+ 0.000000, -0.090905, 0.482287, 0.259485, 0.009402, -0.125271,
+-0.046816, 0.007872, 0.001762, -0.010488, -0.002305, 0.001791,
+0.001101, -0.000303, -0.000064, 0.000143, 0.000059, 0.000116,
+0.000120, -0.000011, -0.000066, -0.000019, 0.000024, 0.000014,
+0.000069, 0.000056, 0.000005, 0.000002, -0.000026, -0.000015,
+0.000055, 0.000012
+],
+      // How to adjust the harmonics for the higest notes.
+      mult: [1, 1, 0.18, 0.016, 0.01, 0.01, 0.01, 0.004,
+                0.014, 0.02, 0.014, 0.004, 0.002, 0.00001],
+      // The frequencies at which to interpolate the harmonics.
+      freq: [65, 80, 100, 135, 180, 240, 620, 1360],
+      // The default filter settings to use for the piano wave.
+      // TODO: this approach attenuates low notes too much -
+      // this should be fixed.
+      defs: { wave: 'trombone', gain: 0.5,
+              attack: 0.002, decay: 0.25, sustain: 0.03, release: 0.1,
+              decayfollow: 0.7,
+              cutoff: 800, cutfollow: 0.1, resonance: 1, detune: 0.9994 }
+    },
   });
 }
 
